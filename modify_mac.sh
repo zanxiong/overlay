@@ -16,7 +16,7 @@ echo "new MAC $NEW_MAC"
 if [ -f $MAC_R ]; then
         echo "$MAC_R file exist, did you aready have the mac rules? skip mac modication!"
 else
-        sudo tee -a $MAC_F << EOF
+        sudo tee -a $MAC_R << EOF
 ACTION=="add", SUBSYSTEM=="net", ATTR{address}=="88:88:88:88:87:88", RUN+="/sbin/ip link set dev %k address $NEW_MAC"
 EOF
 fi
