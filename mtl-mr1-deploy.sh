@@ -14,7 +14,7 @@ cmdl="i915.enable_guc=3 i915.max_vfs=7 i915.force_probe=* udmabuf.list_limit=819
 if [ -f $gpg_f ]; then
         echo "$gpg_f exists, skip!"
 else
-sudo wget https://download.01.org/intel-linux-overlay/ubuntu/E6FA98203588250569758E97D176E3162086EE4C.gpg -O $gpg_f
+        sudo wget https://download.01.org/intel-linux-overlay/ubuntu/E6FA98203588250569758E97D176E3162086EE4C.gpg -O $gpg_f
 fi
 
 sudo apt update
