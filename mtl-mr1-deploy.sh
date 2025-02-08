@@ -1,13 +1,21 @@
 #!/bin/sh
 
 set -x
+set -e
 
 echo "Start to deploy release"
 
 grub_f="/etc/default/grub"
 source_list="/etc/apt/sources.list.d/intel-mtl.list"
 pref_cfg="/etc/apt/preferences.d/intel-mtl"
+gpg_f="/etc/apt/trusted.gpg.d/01-org.gpg"
 cmdl="i915.enable_guc=3 i915.max_vfs=7 i915.force_probe=* udmabuf.list_limit=8192"
+
+if [ -f $gpg_f ]; then
+        echo "$gpg_f exists, skip!"
+else
+sudo wget https://download.01.org/intel-linux-overlay/ubuntu/E6FA98203588250569758E97D176E3162086EE4C.gpg -O $gpg_f
+fi
 
 sudo apt update
 sudo apt upgrade -y
@@ -21,8 +29,6 @@ deb https://download.01.org/intel-linux-overlay/ubuntu jammy main non-free multi
 deb-src https://download.01.org/intel-linux-overlay/ubuntu jammy main non-free multimedia kernels
 EOF
 fi
-
-sudo wget https://download.01.org/intel-linux-overlay/ubuntu/E6FA98203588250569758E97D176E3162086EE4C.gpg -O /etc/apt/trusted.gpg.d/mtl.gpg
 
 if [ -f $pref_cfg ]; then
         echo "preference file $pref_cfg already exists, did you apply the overlay before? Skip $pref_cfg !"
