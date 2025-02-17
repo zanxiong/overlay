@@ -57,6 +57,7 @@ if [ $ret -eq 0 ]; then
 else
         rep="GRUB_CMDLINE_LINUX_DEFAULT=\"quiet splash $cmdl\""
         sudo sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet splash\"/$rep/g" $grub_f
+        sudo update-grub
 fi
 
 echo "End deploy release"
