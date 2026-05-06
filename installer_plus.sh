@@ -188,7 +188,7 @@ CACHE_DIR="${SCRIPT_DIR}/.installer_cache"
 TEMP_DIR=$(mktemp -d)
 # Written by setup_proxy() when a proxy is configured; removed on exit.
 APT_PROXY_CONF="/etc/apt/apt.conf.d/99installer-proxy"
-trap 'rm -rf "${TEMP_DIR}"; rm -f "${APT_PROXY_CONF}"' EXIT
+# trap 'rm -rf "${TEMP_DIR}"; rm -f "${APT_PROXY_CONF}"' EXIT
 
 mkdir -p "${STATE_DIR}" "${CACHE_DIR}"
 
