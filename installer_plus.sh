@@ -25,6 +25,9 @@
 
 set -euo pipefail
 
+# script version
+readonly VERSION="version 2026.0.8"
+
 # ── PPA URL ───────────────────────────────────────────────────────────────────
 readonly PPA_URL="https://download.01.org/intel-linux-overlay/ubuntu"
 
@@ -61,7 +64,8 @@ readonly DEB_JAMMY_NPU_LZ="https://github.com/intel/linux-npu-driver/releases/do
 readonly DEB_JAMMY_LEVEL_ZERO="https://github.com/oneapi-src/level-zero/releases/download/v1.16.1/level-zero_1.16.1+u22.04_amd64.deb"
 
 # PTL: NPU driver tarball (Noble, replaces bundled Jammy NPU packages)
-readonly DEB_PTL_NPU_TARBALL="https://github.com/intel/linux-npu-driver/releases/download/v1.28.0/linux-npu-driver-v1.28.0.20251218-20347000698-ubuntu2404.tar.gz"
+readonly DEB_PTL_NPU_TARBALL="https://github.com/intel/linux-npu-driver/releases/download/v1.32.1/linux-npu-driver-v1.32.1.20260422-24767473183-ubuntu2404.tar.gz"
+#readonly DEB_PTL_NPU_LZ="https://snapshot.ppa.launchpadcontent.net/kobuk-team/intel-graphics/ubuntu/20260324T100000Z/pool/main/l/level-zero-loader/libze1_1.27.0-1~24.04~ppa2_amd64.deb"
 
 # PTL/WCL: iproute2 pre-requisite (Noble only)
 readonly DEB_PTL_WCL_IPROUTE2="https://ftp.ubuntu.com/ubuntu/pool/main/i/iproute2/iproute2_6.14.0-1ubuntu1_amd64.deb"
@@ -89,6 +93,7 @@ declare -A RT_UNSUPPORTED=( [ARL]=1 [MTL]=1 )
 BUILD_KERNEL=false
 
 usage() {
+    echo "${VERSION}"
     cat <<EOF
 Usage:
   PPA install (default):
@@ -562,7 +567,7 @@ step_install_deb_packages() {
             intel-driver-compiler-npu intel-fw-npu intel-level-zero-npu \
             intel-level-zero-npu-dbgsym || true
 
-        local tarball npu_extract npu_sentinel
+        local tarball npu_extract npu_sentinel deb_npu_lz
         tarball=$(basename "${DEB_PTL_NPU_TARBALL}")
         npu_extract="${deb_dir}/npu_ptl"
         npu_sentinel="${deb_dir}/npu_ptl/.extracted"
@@ -577,9 +582,17 @@ step_install_deb_packages() {
         else
             log "NPU tarball already extracted."
         fi
+        
+        #deb_npu_lz=$(basename "${DEB_PTL_NPU_LZ}")
+        #if [[ ! -f "${deb_dir}/${deb_npu_lz}" ]]; then
+        #   run curl -k --fail --location "${CURL_PROXY_ARGS[@]}" "${DEB_PTL_NPU_LZ}" -o "${deb_dir}/${deb_npu_lz}"
+        #else
+        #   log "NPU level zero deb already exist."
+        #fi
 
         run apt-get install -y --allow-downgrades libtbb12
         run dpkg -i "${npu_extract}"/*.deb
+        #run dpkg -i "${deb_dir}/${deb_npu_lz}"
     fi
 
     # Install only the directly downloaded .deb files (not the npu_ptl subdir or the tarball).
@@ -847,11 +860,11 @@ step_validate_packages() {
 
     # Noble has no 'kernels' component in its sources.list
     local components
-    if [[ "${OS_VERSION}" == "UBUNTU_NOBLE" ]]; then
-        components=(multimedia main non-free)
-    else
+    #if [[ "${OS_VERSION}" == "UBUNTU_NOBLE" ]]; then
+    #    components=(multimedia main non-free)
+    #else
         components=(multimedia main non-free kernels)
-    fi
+    #fi
 
     local bom_file="/opt/Bom-list.txt"
     local names_file="${SCRIPT_DIR}/installedPackagesNameList.txt"
@@ -922,6 +935,24 @@ step_validate_packages() {
     log "All package versions validated successfully."
 }
 
+# ── Step: permission and grp fixup ────────────────────────────────────────────
+
+step_configure_groups() {
+    step_skip "group_configured" && return 0
+    
+    log "Permission and groups fixup for NPU driver"
+    
+    # TODO: shall we add udev rules to fixup /dev/accel/accel0 to be root.render?
+    # echo 'SUBSYSTEM==\"accel\", KERNEL==\"accel*\", GROUP=\"render\", MODE=\"0660\"' > /etc/udev/rules.d/10-intel-vpu.rules
+
+    log "Add current user: ${SUDO_USER} to render group"
+    gpasswd -a ${SUDO_USER} render
+    
+    step_done "group_configured"
+    
+    log "Permission and groups fixup for NPU driver done"
+}
+
 # ── Reboot Prompt ─────────────────────────────────────────────────────────────
 
 prompt_reboot() {
@@ -967,8 +998,9 @@ setup_proxy
 export DEBIAN_FRONTEND=noninteractive
 
 log "========================================"
-log " Intel Platform Software Installer"
+log " Intel Platform Software Installer ${VERSION}"
 log "========================================"
+log " USER: ${USER} ORG: ${SUDO_USER}"
 log " OS:            ${OS_VERSION}"
 log " Platform:      ${PLATFORM}"
 log " Kernel:        ${KERNEL_VERSION} (${KERNEL_VARIANT})"
@@ -994,5 +1026,6 @@ fi
 
 step_configure_grub
 step_validate_packages
+step_configure_groups
 
 prompt_reboot
