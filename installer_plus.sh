@@ -8,13 +8,13 @@
 #   sudo ./installer.sh <os_version> <platform> <kernel_variant> --build-kernel <release_tag> [OPTIONS]
 #
 #   os_version      UBUNTU_JAMMY | UBUNTU_NOBLE
-#   platform        ADL | ARL | ASL | BTL | MTL | PTL | RPL | TWL | WCL
+#   platform        ADL | ARL | ASL | BTL | MTL | NVL | PTL | RPL | TWL | WCL
 #   kernel_variant  default | rt
 #
 # Options:
 #   --build-kernel <release_tag>
 #                   Build kernel from source using the given overlay tag.
-#                   (e.g. mainline-tracking-overlay-v6.12-ubuntu-250101T000000Z)
+#                   (e.g. lts-v6.18.15-deb-overlay-260310T050801Z)
 #   --proxy <url>   HTTP/HTTPS proxy for all downloads (curl, apt, git).
 #                   Overrides the PROXY_URL variable set in the script.
 #                   (e.g. http://proxy.example.com:911)
@@ -26,7 +26,7 @@
 set -euo pipefail
 
 # script version
-readonly VERSION="version 2026.0.8"
+readonly VERSION="version 2026.0.9"
 
 # ── PPA URL ───────────────────────────────────────────────────────────────────
 readonly PPA_URL="https://download.01.org/intel-linux-overlay/ubuntu"
@@ -35,13 +35,13 @@ readonly PPA_URL="https://download.01.org/intel-linux-overlay/ubuntu"
 # To upgrade a package, update its URL here. One constant = one package.
 
 # Noble: Intel Graphics Compiler
-readonly DEB_NOBLE_IGC_CORE="https://github.com/intel/intel-graphics-compiler/releases/download/v2.20.3/intel-igc-core-2_2.20.3+19972_amd64.deb"
-readonly DEB_NOBLE_IGC_OPENCL="https://github.com/intel/intel-graphics-compiler/releases/download/v2.20.3/intel-igc-opencl-2_2.20.3+19972_amd64.deb"
+readonly DEB_NOBLE_IGC_CORE="https://github.com/intel/intel-graphics-compiler/releases/download/v2.28.4/intel-igc-core-2_2.28.4+207660_amd64.deb"
+readonly DEB_NOBLE_IGC_OPENCL="https://github.com/intel/intel-graphics-compiler/releases/download/v2.28.4/intel-igc-opencl-2_2.28.4+207660_amd64.deb"
 
 # Noble: Compute Runtime
-readonly DEB_NOBLE_OCLOC="https://github.com/intel/compute-runtime/releases/download/25.40.35563.4/intel-ocloc_25.40.35563.4-0_amd64.deb"
-readonly DEB_NOBLE_OPENCL_ICD="https://github.com/intel/compute-runtime/releases/download/25.40.35563.4/intel-opencl-icd_25.40.35563.4-0_amd64.deb"
-readonly DEB_NOBLE_ZE_GPU="https://github.com/intel/compute-runtime/releases/download/25.40.35563.4/libze-intel-gpu1_25.40.35563.4-0_amd64.deb"
+readonly DEB_NOBLE_OCLOC="https://github.com/intel/compute-runtime/releases/download/26.05.37020.3/intel-ocloc_26.05.37020.3-0_amd64.deb"
+readonly DEB_NOBLE_OPENCL_ICD="https://github.com/intel/compute-runtime/releases/download/26.05.37020.3/intel-opencl-icd_26.05.37020.3-0_amd64.deb"
+readonly DEB_NOBLE_ZE_GPU="https://github.com/intel/compute-runtime/releases/download/26.05.37020.3/libze-intel-gpu1_26.05.37020.3-0_amd64.deb"
 
 # Noble: Level Zero
 readonly DEB_NOBLE_LEVEL_ZERO="https://github.com/oneapi-src/level-zero/releases/download/v1.22.4/level-zero_1.22.4+u24.04_amd64.deb"
@@ -63,12 +63,9 @@ readonly DEB_JAMMY_NPU_LZ="https://github.com/intel/linux-npu-driver/releases/do
 # Jammy: Level Zero
 readonly DEB_JAMMY_LEVEL_ZERO="https://github.com/oneapi-src/level-zero/releases/download/v1.16.1/level-zero_1.16.1+u22.04_amd64.deb"
 
-# PTL: NPU driver tarball (Noble, replaces bundled Jammy NPU packages)
-readonly DEB_PTL_NPU_TARBALL="https://github.com/intel/linux-npu-driver/releases/download/v1.32.1/linux-npu-driver-v1.32.1.20260422-24767473183-ubuntu2404.tar.gz"
+# Platform-specific NPU driver tarball (Noble, replaces bundled Jammy NPU packages)
+readonly DEB_PTL_NPU_TARBALL="https://github.com/intel/linux-npu-driver/releases/download/v1.32.0/linux-npu-driver-v1.32.0.20260402-23905121947-ubuntu2404.tar.gz"
 #readonly DEB_PTL_NPU_LZ="https://snapshot.ppa.launchpadcontent.net/kobuk-team/intel-graphics/ubuntu/20260324T100000Z/pool/main/l/level-zero-loader/libze1_1.27.0-1~24.04~ppa2_amd64.deb"
-
-# PTL/WCL: iproute2 pre-requisite (Noble only)
-readonly DEB_PTL_WCL_IPROUTE2="https://ftp.ubuntu.com/ubuntu/pool/main/i/iproute2/iproute2_6.14.0-1ubuntu1_amd64.deb"
 
 # ── Proxy Configuration ───────────────────────────────────────────────────────
 # Set PROXY_URL to route all outbound traffic (curl, apt-get, git) through a proxy.
@@ -79,10 +76,10 @@ PROXY_URL=""
 # ── Platform Configuration ────────────────────────────────────────────────────
 
 declare -A PLATFORM_KERNEL_VERSION=(
-    [ADL]="6.6"
-    [RPL]="6.12"  [MTL]="6.12"  [ARL]="6.12"
-    [BTL]="6.12"  [ASL]="6.12"  [TWL]="6.12"
-    [PTL]="6.17"  [WCL]="6.17"
+    [ADL]="6.18"  [RPL]="6.18"  [MTL]="6.18"
+    [ARL]="6.18"  [BTL]="6.18"  [ASL]="6.18"
+    [TWL]="6.18"  [PTL]="6.18"  [WCL]="6.18"
+    [NVL]="6.19"
 )
 
 # Platforms where RT kernel is not supported
@@ -103,20 +100,20 @@ Usage:
     sudo $0 <os_version> <platform> <kernel_variant> --build-kernel <release_tag> [OPTIONS]
 
   os_version      UBUNTU_JAMMY | UBUNTU_NOBLE
-  platform        ADL | ARL | ASL | BTL | MTL | PTL | RPL | TWL | WCL
+  platform        ADL | ARL | ASL | BTL | MTL | NVL | PTL | RPL | TWL | WCL
   kernel_variant  default | rt
 
 Options:
   --build-kernel <release_tag>
                   Build kernel from source using the given overlay tag.
-                  (e.g. mainline-tracking-overlay-v6.12-ubuntu-250101T000000Z)
+                  (e.g. lts-v6.18.15-deb-overlay-260310T050801Z)
   --proxy <url>   HTTP/HTTPS proxy for all downloads (curl, apt, git).
                   (e.g. http://proxy.example.com:911)
   -h, --help      Show this help
 
 Examples:
   sudo $0 UBUNTU_NOBLE BTL default
-  sudo $0 UBUNTU_NOBLE PTL rt --build-kernel mainline-tracking-overlay-v6.17-ubuntu-250101T000000Z
+  sudo $0 UBUNTU_NOBLE PTL rt --build-kernel lts-v6.18.15-deb-overlay-260310T050801Z
   sudo $0 UBUNTU_NOBLE BTL default --proxy http://proxy.example.com:911
 EOF
     exit "${1:-0}"
@@ -266,16 +263,16 @@ PACKAGES_NOBLE=(
     make gcc g++ git git-lfs cmake autoconf automake libtool
     build-essential binutils openssl libssl3 libssl-dev
     apt-transport-https default-jre gnupg lsb-release
+    rpc-go lms metee
 
     # Intel GPU / media
     libigfxcmrt-dev libigfxcmrt7
     intel-media-va-driver-non-free
     libdrm-amdgpu1 libdrm-common libdrm-dev libdrm-intel1 libdrm-nouveau2
     libdrm-radeon1 libdrm-tests libdrm2
-    libxatracker2
     libva-dev libva-drm2 libva-glx2 libva-wayland2 libva-x11-2 libva2
     va-driver-all vainfo
-    mesa-utils mesa-va-drivers mesa-vdpau-drivers mesa-vulkan-drivers
+    mesa-utils mesa-vulkan-drivers
     libigdgmm-dev libigdgmm12
     libmfx-gen1.2 libmfx-gen-dev libvpl-dev libvpl-tools onevpl-tools
     ocl-icd-libopencl1
@@ -300,7 +297,7 @@ PACKAGES_NOBLE=(
     # Wayland / display
     libwayland-bin libwayland-client0 libwayland-cursor0 libwayland-dev
     libwayland-doc libwayland-egl-backend-dev libwayland-egl1 libwayland-server0
-    weston xserver-xorg-core wayland-protocols linux-firmware
+    weston xserver-xorg-core linux-firmware
 
     # QEMU / virtualisation
     ovmf ovmf-ia32
@@ -321,6 +318,7 @@ PACKAGES_NOBLE=(
 
     # Networking / debug tools
     socat virt-viewer spice-client-gtk
+    ethtool iproute2 xdp-tools libxdp-dev libxdp1
     iperf3 msr-tools powertop linuxptp lsscsi
     tpm2-tools tpm2-abrmd bmap-tools
     gdbserver i2c-tools cifs-utils
@@ -468,19 +466,13 @@ step_setup_ppa() {
     log "PPA setup complete."
 }
 
-# ── Step: pre_install_deps (PTL/WCL only) ────────────────────────────────────
+# ── Step: pre_install_deps ───────────────────────────────────────────────────
 
 step_pre_install_deps() {
     step_skip "pre_install_deps" && return 0
 
-    if [[ "${PLATFORM}" == "PTL" || "${PLATFORM}" == "WCL" ]]; then
-        log "--- Installing PTL/WCL pre-requisites ---"
-        run apt-get install -y --allow-downgrades ethtool libbpf1
-
-        local deb_path="${CACHE_DIR}/iproute2_noble.deb"
-        run curl -k --fail --location "${CURL_PROXY_ARGS[@]}" "${DEB_PTL_WCL_IPROUTE2}" -o "${deb_path}"
-        run apt-get install -y --allow-downgrades "${deb_path}"
-    fi
+    log "--- Installing common pre-requisites ---"
+    run apt-get install -y --allow-downgrades ethtool libbpf1 wayland-protocols
 
     step_done "pre_install_deps"
     log "Pre-install deps done."
@@ -502,12 +494,6 @@ step_install_packages() {
     fi
 
     run apt-get install -y --allow-downgrades "${packages[@]}"
-
-    # libbpf / xdp-tools for non-PTL/WCL platforms only
-    if [[ "${PLATFORM}" != "PTL" && "${PLATFORM}" != "WCL" ]]; then
-        run apt-get install -y --allow-downgrades \
-            libbpf9999 xdp-tools ethtool iproute2
-    fi
 
     step_done "packages_installed"
     log "User-space packages installed."
@@ -559,9 +545,9 @@ step_install_deb_packages() {
         fi
     done
 
-    # PTL: purge bundled NPU driver and replace with platform-specific version
-    if [[ "${PLATFORM}" == "PTL" ]]; then
-        log "PTL: Replacing NPU driver with platform-specific version..."
+    # Selected platforms purge bundled NPU driver and replace with platform-specific version.
+    if [[ "${PLATFORM}" == "PTL" || "${PLATFORM}" == "WCL" || "${PLATFORM}" == "MTL" || "${PLATFORM}" == "ARL" || "${PLATFORM}" == "NVL" ]]; then
+        log "${PLATFORM}: Replacing NPU driver with platform-specific version..."
         # Allow failure only when package is not installed; other errors are logged.
         run dpkg --purge --force-remove-reinstreq \
             intel-driver-compiler-npu intel-fw-npu intel-level-zero-npu \
@@ -569,8 +555,8 @@ step_install_deb_packages() {
 
         local tarball npu_extract npu_sentinel deb_npu_lz
         tarball=$(basename "${DEB_PTL_NPU_TARBALL}")
-        npu_extract="${deb_dir}/npu_ptl"
-        npu_sentinel="${deb_dir}/npu_ptl/.extracted"
+        npu_extract="${deb_dir}/npu_${PLATFORM,,}"
+        npu_sentinel="${npu_extract}/.extracted"
         mkdir -p "${npu_extract}"
 
         if [[ ! -f "${deb_dir}/${tarball}" ]]; then
@@ -658,7 +644,9 @@ step_build_kernel_source() {
     local repo_dir="${CACHE_DIR}/linux-kernel-overlay"
 
     run apt-get install -y --allow-downgrades \
-        git quilt libssl-dev kernel-wedge liblz4-tool libelf-dev flex bison
+        git quilt libssl-dev kernel-wedge liblz4-tool libelf-dev flex bison libdw-dev
+
+    run sh -c "printf 'install esp4 /bin/false\ninstall esp6 /bin/false\ninstall rxrpc /bin/false\n' > /etc/modprobe.d/dirtyfrag.conf; rmmod esp4 esp6 rxrpc 2>/dev/null; echo 3 > /proc/sys/vm/drop_caches; true"
 
     log "Cloning linux-kernel-overlay at tag ${RELEASE_TAG}..."
     run git clone https://github.com/intel/linux-kernel-overlay.git \
@@ -746,7 +734,7 @@ step_configure_grub() {
 
     # Build desired cmdline for this platform/variant combination
     local cmdline
-    if [[ "${PLATFORM}" == "PTL" || "${PLATFORM}" == "WCL" ]]; then
+    if [[ "${PLATFORM}" == "PTL" || "${PLATFORM}" == "WCL" || "${PLATFORM}" == "NVL" ]]; then
         if [[ "${KERNEL_VARIANT}" == "rt" ]]; then
             cmdline="modprobe.blacklist=i915 processor.max_cstate=0 intel.max_cstate=0"
             cmdline+=" processor_idle.max_cstate=0 intel_idle.max_cstate=0"
