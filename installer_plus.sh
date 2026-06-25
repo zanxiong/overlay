@@ -35,8 +35,8 @@ readonly PPA_URL="https://download.01.org/intel-linux-overlay/ubuntu"
 # To upgrade a package, update its URL here. One constant = one package.
 
 # Noble: Intel Graphics Compiler
-readonly DEB_NOBLE_IGC_CORE="https://github.com/intel/intel-graphics-compiler/releases/download/v2.28.4/intel-igc-core-2_2.28.4+207660_amd64.deb"
-readonly DEB_NOBLE_IGC_OPENCL="https://github.com/intel/intel-graphics-compiler/releases/download/v2.28.4/intel-igc-opencl-2_2.28.4+207660_amd64.deb"
+readonly DEB_NOBLE_IGC_CORE="https://github.com/intel/intel-graphics-compiler/releases/download/v2.28.4/intel-igc-core-2_2.28.4+20760_amd64.deb"
+readonly DEB_NOBLE_IGC_OPENCL="https://github.com/intel/intel-graphics-compiler/releases/download/v2.28.4/intel-igc-opencl-2_2.28.4+20760_amd64.deb"
 
 # Noble: Compute Runtime
 readonly DEB_NOBLE_OCLOC="https://github.com/intel/compute-runtime/releases/download/26.05.37020.3/intel-ocloc_26.05.37020.3-0_amd64.deb"
@@ -417,7 +417,7 @@ step_setup_ppa() {
     local gpg_target="/etc/apt/trusted.gpg.d/${PLATFORM}.gpg"
     local pin_file="/etc/apt/preferences.d/intel-${PLATFORM}"
 
-    command_exists curl || run apt-get install -y curl
+    command_exists curl || run apt-get update && apt-get install -y curl
 
     # GPG key: download only if not already present
     if [[ ! -f "${gpg_target}" ]]; then
